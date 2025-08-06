@@ -1,0 +1,7 @@
+#fichiers et dossiers Python
+__pycache__/
+*.pyc
+
+#dossiers d'environnement Anaconda
+#(le nom de notre environnement)
+detecteur_defauts/

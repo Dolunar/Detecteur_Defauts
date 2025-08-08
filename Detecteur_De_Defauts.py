@@ -42,7 +42,7 @@ class CameraStream(QWidget):
         self.fps_slider.setValue(60)
         self.fps_slider.valueChanged.connect(self.change_fps)
         self.fps_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        self.fps_slider.setTickInterval(10)
+        self.fps_slider.setTickInterval(100)
 
         self.exp_title = QLabel("Réglage Exposition (µs)")
         self.exp_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -50,11 +50,11 @@ class CameraStream(QWidget):
         self.exp_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.exp_slider = QSlider(Qt.Orientation.Horizontal)
         self.exp_slider.setMinimum(100)  # Valeur minimale exposée à 100 µs (ajuster selon caméra)
-        self.exp_slider.setMaximum(50000) # Valeur max provisoire
-        self.exp_slider.setValue(5000)
+        self.exp_slider.setMaximum(20000) # Valeur max provisoire
+        self.exp_slider.setValue(2500)
         self.exp_slider.valueChanged.connect(self.change_exposure)
         self.exp_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        self.exp_slider.setTickInterval(5000)
+        self.exp_slider.setTickInterval(2500)
 
         # Layout sliders verticaux avec titres
         sliders_layout = QVBoxLayout()
@@ -151,7 +151,7 @@ class CameraStream(QWidget):
 
         elapsed_time = time.time() - start_time
         fps_loop = 1 / elapsed_time if elapsed_time > 0 else 0
-        cv2.putText(bgr_image, f"FPS caméra: {self.current_fps} - FPS loop: {fps_loop:.2f}", (10, 30),
+        cv2.putText(bgr_image, f"FPS cam: {self.current_fps} - FPS loop: {fps_loop:.2f}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
         height, width, channel = bgr_image.shape
@@ -163,8 +163,9 @@ class CameraStream(QWidget):
     def closeEvent(self, event):
         self.timer.stop()
         self.cam.stream_off()
-        self.cam.close()
+        # Ne pas appeler self.cam.close() car non existant
         event.accept()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

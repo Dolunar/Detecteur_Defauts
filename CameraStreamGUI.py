@@ -104,10 +104,28 @@ class CameraStream(QWidget):
         ref_buttons_layout.addStretch()
         
         
-        # Layout principal horizontal (vidéo + photo référence + sliders)
+        # Layout vidéo + boutons pause/reprendre (à gauche)
+        video_layout = QVBoxLayout()
+        video_layout.addWidget(self.label)
+        
+        # Boutons pause/reprendre sous le flux vidéo
+        self.pause_button = QPushButton("Pause")
+        self.pause_button.setStyleSheet("background-color: orange; color: black; font-size: 16px; padding: 10px;")
+        self.pause_button.clicked.connect(self.pause_stream)
+        
+        self.resume_button = QPushButton("Reprendre")
+        self.resume_button.setStyleSheet("background-color: blue; color: white; font-size: 16px; padding: 10px;")
+        self.resume_button.clicked.connect(self.resume_stream)
+        
+        video_layout.addWidget(self.pause_button)
+        video_layout.addWidget(self.resume_button)
+        video_layout.addStretch()
+        
+        # Layout principal horizontal
         main_layout = QHBoxLayout()
-        main_layout.addWidget(self.label, stretch=4)
+        main_layout.addLayout(video_layout, stretch=4)
         main_layout.addLayout(ref_buttons_layout, stretch=2)
+
     
 
         # Layout global vertical (bouton + contenu)
@@ -173,6 +191,26 @@ class CameraStream(QWidget):
 
         # Variable pour stocker la photo de référence en format QImage
         self.reference_image = None
+        
+        # Bouton Pause
+        self.pause_button = QPushButton("Pause")
+        self.pause_button.setStyleSheet("background-color: orange; color: black; font-size: 16px; padding: 10px;")
+        self.pause_button.clicked.connect(self.pause_stream)
+        
+        # Bouton Reprendre
+        self.resume_button = QPushButton("Reprendre")
+        self.resume_button.setStyleSheet("background-color: blue; color: white; font-size: 16px; padding: 10px;")
+        self.resume_button.clicked.connect(self.resume_stream)
+        
+
+        
+        ###############################
+        ###############################
+        ###############################
+        ######## FIN INIT #############
+        ###############################
+        ###############################
+        ###############################
 
     def take_reference_photo(self):
         raw_image = self.cam.data_stream[0].get_image(timeout=100)
@@ -237,6 +275,15 @@ class CameraStream(QWidget):
         self.cam.stream_off()
         # Ne pas appeler self.cam.close() car non existant
         event.accept()
+        
+    def pause_stream(self):
+        if self.timer.isActive():
+            self.timer.stop()
+    
+    def resume_stream(self):
+        if not self.timer.isActive():
+            self.timer.start(int(1000 / self.current_fps))
+
 
 
 if __name__ == "__main__":

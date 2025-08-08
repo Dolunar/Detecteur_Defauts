@@ -1,4 +1,4 @@
-import sys
+import sys 
 import gxipy as gx
 import cv2
 import numpy as np
@@ -31,6 +31,22 @@ class CameraStream(QWidget):
         self.label.setScaledContents(True)
         self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
+        # Zone pour afficher la photo de référence
+        self.ref_label = QLabel("Photo de référence")
+        self.ref_label.setFixedSize(520, 320)
+        self.ref_label.setStyleSheet("border: 2px solid gray; background-color: #f0f0f0;")
+        self.ref_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Bouton bleu pour prendre photo de référence
+        self.ref_button = QPushButton("Prendre photo de référence")
+        self.ref_button.setStyleSheet("background-color: green; color: white; font-size: 18px; padding: 12px;")
+        self.ref_button.clicked.connect(self.take_reference_photo)
+
+        # Bouton pour supprimer la photo de référence
+        self.clear_ref_button = QPushButton("Supprimer la photo de référence")
+        self.clear_ref_button.setStyleSheet("background-color: grey; color: white; font-size: 12px; padding: 10px;")
+        self.clear_ref_button.clicked.connect(self.clear_reference_photo)
+
         # Sliders + labels à droite
         self.fps_title = QLabel("Réglage FPS")
         self.fps_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -50,8 +66,8 @@ class CameraStream(QWidget):
         self.exp_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.exp_slider = QSlider(Qt.Orientation.Horizontal)
         self.exp_slider.setMinimum(100)  # Valeur minimale exposée à 100 µs (ajuster selon caméra)
-        self.exp_slider.setMaximum(20000) # Valeur max provisoire
-        self.exp_slider.setValue(2500)
+        self.exp_slider.setMaximum(10000) # Valeur max provisoire
+        self.exp_slider.setValue(1500)
         self.exp_slider.valueChanged.connect(self.change_exposure)
         self.exp_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.exp_slider.setTickInterval(2500)
@@ -67,10 +83,32 @@ class CameraStream(QWidget):
         sliders_layout.addWidget(self.exp_slider)
         sliders_layout.addStretch()
 
-        # Layout principal horizontal (vidéo + sliders)
+        # Layout vertical pour la photo de référence et ses boutons
+        # Layout vertical pour la photo de référence, sliders et ses boutons
+        ref_buttons_layout = QVBoxLayout()
+        
+        # Ajout des sliders + labels au-dessus
+        ref_buttons_layout.addWidget(self.fps_title)
+        ref_buttons_layout.addWidget(self.fps_label)
+        ref_buttons_layout.addWidget(self.fps_slider)
+        ref_buttons_layout.addSpacing(20)
+        ref_buttons_layout.addWidget(self.exp_title)
+        ref_buttons_layout.addWidget(self.exp_label)
+        ref_buttons_layout.addWidget(self.exp_slider)
+        ref_buttons_layout.addSpacing(30)
+        
+        # Puis la zone de photo et les boutons
+        ref_buttons_layout.addWidget(self.ref_label)
+        ref_buttons_layout.addWidget(self.ref_button)
+        ref_buttons_layout.addWidget(self.clear_ref_button)
+        ref_buttons_layout.addStretch()
+        
+        
+        # Layout principal horizontal (vidéo + photo référence + sliders)
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.label, stretch=4)
-        main_layout.addLayout(sliders_layout, stretch=1)
+        main_layout.addLayout(ref_buttons_layout, stretch=2)
+    
 
         # Layout global vertical (bouton + contenu)
         global_layout = QVBoxLayout()
@@ -95,7 +133,7 @@ class CameraStream(QWidget):
         # Récupérer plages FPS et exposition réelles
         fps_range = self.cam.AcquisitionFrameRate.get_range()
         minfps=10
-        maxfps=1000
+        maxfps=500
         self.min_fps = int(fps_range['min'])
         self.max_fps = int(fps_range['max'])
         self.fps_slider.setMinimum(minfps)
@@ -123,6 +161,40 @@ class CameraStream(QWidget):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(int(1000 / self.current_fps))
+        
+        try:
+            if hasattr(self.cam, "FocusMode") and self.cam.FocusMode.is_writable():
+                self.cam.FocusMode.set(gx.GxFocusMode.AUTO)
+                print("🎯 Autofocus activé.")
+            else:
+                print("⚠️ Autofocus non supporté sur cette caméra.")
+        except Exception as e:
+            print(f"Erreur lors de l'activation de l'autofocus : {e}")
+
+        # Variable pour stocker la photo de référence en format QImage
+        self.reference_image = None
+
+    def take_reference_photo(self):
+        raw_image = self.cam.data_stream[0].get_image(timeout=100)
+        if raw_image is None:
+            return
+        rgb_image = raw_image.convert("RGB")
+        np_image = rgb_image.get_numpy_array()
+        if np_image is None:
+            return
+
+        bgr_image = cv2.cvtColor(np_image, cv2.COLOR_RGB2BGR)
+        height, width, channel = bgr_image.shape
+        bytes_per_line = 3 * width
+        qt_image = QImage(bgr_image.data, width, height, bytes_per_line, QImage.Format.Format_BGR888)
+
+        self.reference_image = qt_image
+        self.ref_label.setPixmap(QPixmap.fromImage(self.reference_image))
+
+    def clear_reference_photo(self):
+        self.reference_image = None
+        self.ref_label.clear()
+        self.ref_label.setText("Photo de référence")
 
     def change_fps(self, value):
         self.current_fps = value

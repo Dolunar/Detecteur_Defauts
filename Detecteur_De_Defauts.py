@@ -3,7 +3,10 @@ import gxipy as gx
 import cv2
 import numpy as np
 import time
-from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy
+from PyQt6.QtWidgets import (
+    QApplication, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QSlider,
+    QSizePolicy, QPushButton, QSpacerItem
+)
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import QTimer, Qt
 
@@ -13,45 +16,68 @@ class CameraStream(QWidget):
 
         self.setWindowTitle("Caméra Daheng - PyQt6")
 
+        # Bouton Quitter en haut à droite
+        self.quit_button = QPushButton("Quitter")
+        self.quit_button.setStyleSheet("background-color: red; color: white; font-weight: bold;")
+        self.quit_button.clicked.connect(self.close)
+
+        # Layout horizontal supérieur pour bouton quitter à droite
+        top_layout = QHBoxLayout()
+        top_layout.addStretch()
+        top_layout.addWidget(self.quit_button)
+
         # Label vidéo
         self.label = QLabel("Flux vidéo")
         self.label.setScaledContents(True)
         self.label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Sliders + labels à droite
+        self.fps_title = QLabel("Réglage FPS")
+        self.fps_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.fps_label = QLabel("FPS: --")
+        self.fps_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.fps_slider = QSlider(Qt.Orientation.Horizontal)
         self.fps_slider.setMinimum(1)    # sera ajusté après init caméra
         self.fps_slider.setMaximum(1000)
         self.fps_slider.setValue(60)
         self.fps_slider.valueChanged.connect(self.change_fps)
-        self.fps_slider.setTickPosition(QSlider.TickPosition.TicksRight)
+        self.fps_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.fps_slider.setTickInterval(10)
 
+        self.exp_title = QLabel("Réglage Exposition (µs)")
+        self.exp_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.exp_label = QLabel("Exposition (µs): --")
+        self.exp_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.exp_slider = QSlider(Qt.Orientation.Horizontal)
         self.exp_slider.setMinimum(100)  # Valeur minimale exposée à 100 µs (ajuster selon caméra)
         self.exp_slider.setMaximum(50000) # Valeur max provisoire
         self.exp_slider.setValue(5000)
         self.exp_slider.valueChanged.connect(self.change_exposure)
-        self.exp_slider.setTickPosition(QSlider.TickPosition.TicksRight)
+        self.exp_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.exp_slider.setTickInterval(5000)
 
-        # Layout sliders verticaux
+        # Layout sliders verticaux avec titres
         sliders_layout = QVBoxLayout()
-        sliders_layout.addWidget(self.fps_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        sliders_layout.addWidget(self.fps_title)
+        sliders_layout.addWidget(self.fps_label)
         sliders_layout.addWidget(self.fps_slider)
         sliders_layout.addSpacing(30)
-        sliders_layout.addWidget(self.exp_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        sliders_layout.addWidget(self.exp_title)
+        sliders_layout.addWidget(self.exp_label)
         sliders_layout.addWidget(self.exp_slider)
         sliders_layout.addStretch()
 
-        # Layout principal horizontal
+        # Layout principal horizontal (vidéo + sliders)
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.label, stretch=4)
         main_layout.addLayout(sliders_layout, stretch=1)
 
-        self.setLayout(main_layout)
+        # Layout global vertical (bouton + contenu)
+        global_layout = QVBoxLayout()
+        global_layout.addLayout(top_layout)
+        global_layout.addLayout(main_layout)
+
+        self.setLayout(global_layout)
 
         # Initialisation caméra
         self.device_manager = gx.DeviceManager()

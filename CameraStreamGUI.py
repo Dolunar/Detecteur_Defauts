@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import QTimer, Qt
 
-class CameraStream(QWidget):
+class CameraStreamGUI(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -55,7 +55,7 @@ class CameraStream(QWidget):
         self.fps_slider = QSlider(Qt.Orientation.Horizontal)
         self.fps_slider.setMinimum(1)    # sera ajusté après init caméra
         self.fps_slider.setMaximum(1000)
-        self.fps_slider.setValue(60)
+        self.fps_slider.setValue(300)
         self.fps_slider.valueChanged.connect(self.change_fps)
         self.fps_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
         self.fps_slider.setTickInterval(100)
@@ -288,7 +288,7 @@ class CameraStream(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = CameraStream()
+    window = CameraStreamGUI()
     window.resize(1200, 700)
     window.show()
     sys.exit(app.exec())
